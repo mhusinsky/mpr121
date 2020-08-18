@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- MPR121.cpp - MPR121 class implementation file
+ Bareconductive_MPR121.cpp - MPR121 class implementation file
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
@@ -41,7 +41,7 @@ extern "C" {
   #include <inttypes.h>
 }
 
-#include "MPR121.h"
+#include "Bareconductive_MPR121.h"
 #include <Arduino.h>
 
 #ifdef ARDUINO_ARCH_AVR
@@ -176,7 +176,7 @@ bool MPR121_type::begin(uint8_t address, uint8_t touchThreshold, uint8_t release
       setReleaseThreshold( releaseThreshold );
     }
 
-    if( interruptPin != defaultSettings.INTERRUPT ){
+    if( interruptPin != defaultSettings.INTERRUPT_PIN ){
       setInterruptPin( interruptPin );
     }
 
@@ -315,7 +315,7 @@ void MPR121_type::applySettings(MPR121_settings_type *settings){
   error &= ~(1<<NOT_INITED_BIT); // clear not inited error as we have just inited!
   setTouchThreshold(settings->TTHRESH);
   setReleaseThreshold(settings->RTHRESH);
-  setInterruptPin(settings->INTERRUPT);
+  setInterruptPin(settings->INTERRUPT_PIN);
 
   if(wasRunning) run();
 }

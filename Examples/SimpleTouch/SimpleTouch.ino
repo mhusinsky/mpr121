@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- GPIOinverter.ino - MPR121 GPIO inverter - reads a pin, outputs the inverse
+ SimpleTouch.ino - simple MPR121 touch detection demo with serial output
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
@@ -34,18 +34,18 @@
 
 *******************************************************************************/
 
-// Requires an LED with a series current limiting resistor connected between
-// E11 and ground. 470 ohms is good for most LEDs. E10 is set as a digital input
-// with an internal pullup. Leaving E10 unconnected turns the LED off.
-// Connecting E10 to ground turns the LED on.
-
 // touch includes
-#include <MPR121.h>
+#include <Bareconductive_MPR121.h>
+#include <Bareconductive_MPR121_Datastream.h>
 #include <Wire.h>
 
 // touch constants
 const uint32_t BAUD_RATE = 115200;
-const uint8_t MPR121_ADDR = 0x5C;
+const uint8_t MPR121_ADDR = 0x5A;  // 0x5C is the MPR121 I2C address on the Bare Touch Board
+const uint8_t MPR121_INT = 4;  // pin 4 is the MPR121 interrupt on the Bare Touch Board
+
+// MPR121 datastream behaviour constants
+const bool MPR121_DATASTREAM_ENABLE = false;
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -78,32 +78,42 @@ void setup() {
     while (1);
   }
 
-  // The MPR121 allows a mixture of GPIO and touch sense electrodes to be
-  // selected for the 12 pins labelled E0..E11, but you can't just pick and
-  // choose arbitrarily. The first four electrodes (E0..E3) are always touch
-  // sense pins - they can't be anything else. Then you can set the number of
-  // GPIO pins from 0 to 8 for the remaining pins. These are set sequentially
-  // i.e. if 1 pin is required, this is ALWAYS E11, if 2 pins, E11 and E10
-  // and so on up to 8 pins (E11..E4).
+  MPR121.setInterruptPin(MPR121_INT);
 
-  // See p.20 of http://www.nxp.com/docs/en/data-sheet/MPR121.pdf
-  // for more details.
+  if (MPR121_DATASTREAM_ENABLE) {
+    MPR121.restoreSavedThresholds();
+    MPR121_Datastream.begin(&Serial);
+  } else {
+    MPR121.setTouchThreshold(40);  // this is the touch threshold - setting it low makes it more like a proximity trigger, default value is 40 for touch
+    MPR121.setReleaseThreshold(20);  // this is the release threshold - must ALWAYS be smaller than the touch threshold, default value is 20 for touch
+  }
 
-  MPR121.setNumDigPins(2);
-
-  // Note that each electrode has 7 possible pin modes (6 GPIO and 1 touch)
-  // these are INPUT, INPUT_PULLUP (input with internal pullup), INPUT_PULLDOWN
-  // (input with internal pulldown), OUTPUT, OUTPUT_HIGHSIDE (open collector
-  // output, high-side), OUTPUT_LOWSIDE (open collector output, low side).
-
-  // See p.3 of http://cache.freescale.com/files/sensors/doc/app_note/AN3894.pdf
-  // for more details
-
-  MPR121.pinMode(11, OUTPUT);
-  MPR121.pinMode(10, INPUT_PULLUP);
+  MPR121.setFFI(FFI_10);
+  MPR121.setSFI(SFI_10);
+  MPR121.setGlobalCDT(CDT_4US);  // reasonable for larger capacitances
+  
+  digitalWrite(LED_BUILTIN, HIGH);  // switch on user LED while auto calibrating electrodes
+  delay(1000);
+  MPR121.autoSetElectrodes();  // autoset all electrode settings
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void loop() {
-  bool readVal = MPR121.digitalRead(10);  // read E10
-  MPR121.digitalWrite(11, !readVal);  // write the inverse to E11
+  MPR121.updateAll();
+
+  for (int i = 0; i < 12; i++) {
+    if (MPR121.isNewTouch(i)) {
+      Serial.print("electrode ");
+      Serial.print(i, DEC);
+      Serial.println(" was just touched");
+    } else if (MPR121.isNewRelease(i)) {
+      Serial.print("electrode ");
+      Serial.print(i, DEC);
+      Serial.println(" was just released");
+    }
+  }
+
+  if (MPR121_DATASTREAM_ENABLE) {
+    MPR121_Datastream.update();
+  }
 }

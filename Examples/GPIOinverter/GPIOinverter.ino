@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- LEDfade.ino - simple MPR121 PWM LED fader
+ GPIOinverter.ino - MPR121 GPIO inverter - reads a pin, outputs the inverse
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
@@ -35,15 +35,17 @@
 *******************************************************************************/
 
 // Requires an LED with a series current limiting resistor connected between
-// E11 and ground. 470 ohms is good for most LEDs.
+// E11 and ground. 470 ohms is good for most LEDs. E10 is set as a digital input
+// with an internal pullup. Leaving E10 unconnected turns the LED off.
+// Connecting E10 to ground turns the LED on.
 
 // touch includes
-#include <MPR121.h>
+#include <Bareconductive_MPR121.h>
 #include <Wire.h>
 
 // touch constants
 const uint32_t BAUD_RATE = 115200;
-const uint8_t MPR121_ADDR = 0x5C;
+const uint8_t MPR121_ADDR = 0x5A;
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -84,37 +86,24 @@ void setup() {
   // i.e. if 1 pin is required, this is ALWAYS E11, if 2 pins, E11 and E10
   // and so on up to 8 pins (E11..E4).
 
-  // See p16 of http://www.freescale.com/files/sensors/doc/data_sheet/MPR121.pdf
+  // See p.20 of http://www.nxp.com/docs/en/data-sheet/MPR121.pdf
   // for more details.
 
-  MPR121.setNumDigPins(1);
+  MPR121.setNumDigPins(2);
 
-  // Note that you must also set the pin mode explicitly. This is because each
-  // electrode has 7 possible pin modes (6 GPIO and 1 touch), so the library is
-  // unable to correctly guess on your behalf. These modes are INPUT, INPUT_PULLUP
-  // (input with internal pullup), INPUT_PULLDOWN (input with internal pulldown),
-  // OUTPUT, OUTPUT_HIGHSIDE (open collector output, high-side), OUTPUT_LOWSIDE (open
-  // collector output, low side).
+  // Note that each electrode has 7 possible pin modes (6 GPIO and 1 touch)
+  // these are INPUT, INPUT_PULLUP (input with internal pullup), INPUT_PULLDOWN
+  // (input with internal pulldown), OUTPUT, OUTPUT_HIGHSIDE (open collector
+  // output, high-side), OUTPUT_LOWSIDE (open collector output, low side).
 
-  // See p3 of http://cache.freescale.com/files/sensors/doc/app_note/AN3894.pdf
+  // See p.3 of http://cache.freescale.com/files/sensors/doc/app_note/AN3894.pdf
   // for more details
 
   MPR121.pinMode(11, OUTPUT);
+  MPR121.pinMode(10, INPUT_PULLUP);
 }
 
 void loop() {
-  int i;
-
-  // Note that ELE9 and ELE10 have a PWM bug - you should avoid using them
-  // See https://community.freescale.com/thread/305474 for more details
-
-  for (i = 0; i < 256; i++) {
-    MPR121.analogWrite(11, i);
-    delay(10);
-  }
-
-  for (i = 255; i >= 0; i--) {
-    MPR121.analogWrite(11, i);
-    delay(10);
-  }
+  bool readVal = MPR121.digitalRead(10);  // read E10
+  MPR121.digitalWrite(11, !readVal);  // write the inverse to E11
 }

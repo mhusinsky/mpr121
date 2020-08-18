@@ -3,13 +3,12 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- DataStream.ino - prints capacitive sense data from MPR121 to serial port
+ LEDfade.ino - simple MPR121 PWM LED fader
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
 
- Bare Conductive code written by Stefan Dzisiewski-Smith, Peter Krige, Pascal
- Loose and Szymon Kaliski.
+ Bare Conductive code written by Stefan Dzisiewski-Smith and Peter Krige.
 
  This work is licensed under a MIT license https://opensource.org/licenses/MIT
 
@@ -35,22 +34,19 @@
 
 *******************************************************************************/
 
+// Requires an LED with a series current limiting resistor connected between
+// E11 and ground. 470 ohms is good for most LEDs.
+
 // touch includes
-#include <MPR121.h>
-#include <MPR121_Datastream.h>
+#include <Bareconductive_MPR121.h>
 #include <Wire.h>
 
 // touch constants
 const uint32_t BAUD_RATE = 115200;
-const uint8_t MPR121_ADDR = 0x5C;
-const uint8_t MPR121_INT = 4;
-
-// MPR121 datastream behaviour constants
-const bool MPR121_SAVED_THRESHOLDS = true;
+const uint8_t MPR121_ADDR = 0x5A;
 
 void setup() {
   Serial.begin(BAUD_RATE);
-  pinMode(LED_BUILTIN, OUTPUT);
 
   if (!MPR121.begin(MPR121_ADDR)) {
     Serial.println("error setting up MPR121");
@@ -80,28 +76,45 @@ void setup() {
     while (1);
   }
 
-  MPR121.setInterruptPin(MPR121_INT);
+  // The MPR121 allows a mixture of GPIO and touch sense electrodes to be
+  // selected for the 12 pins labelled E0..E11, but you can't just pick and
+  // choose arbitrarily. The first four electrodes (E0..E3) are always touch
+  // sense pins - they can't be anything else. Then you can set the number of
+  // GPIO pins from 0 to 8 for the remaining pins. These are set sequentially
+  // i.e. if 1 pin is required, this is ALWAYS E11, if 2 pins, E11 and E10
+  // and so on up to 8 pins (E11..E4).
 
-  if (MPR121_SAVED_THRESHOLDS) {
-    MPR121.restoreSavedThresholds();
-  } else {
-    MPR121.setTouchThreshold(40);
-    MPR121.setReleaseThreshold(20);
-  }
+  // See p16 of http://www.freescale.com/files/sensors/doc/data_sheet/MPR121.pdf
+  // for more details.
 
-  MPR121.setFFI(FFI_10);
-  MPR121.setSFI(SFI_10);
-  MPR121.setGlobalCDT(CDT_4US);  // reasonable for larger capacitances
+  MPR121.setNumDigPins(1);
 
-  digitalWrite(LED_BUILTIN, HIGH);  // switch on user LED while auto calibrating electrodes
-  delay(1000);
-  MPR121.autoSetElectrodes();  // autoset all electrode settings
-  digitalWrite(LED_BUILTIN, LOW);
+  // Note that you must also set the pin mode explicitly. This is because each
+  // electrode has 7 possible pin modes (6 GPIO and 1 touch), so the library is
+  // unable to correctly guess on your behalf. These modes are INPUT, INPUT_PULLUP
+  // (input with internal pullup), INPUT_PULLDOWN (input with internal pulldown),
+  // OUTPUT, OUTPUT_HIGHSIDE (open collector output, high-side), OUTPUT_LOWSIDE (open
+  // collector output, low side).
 
-  MPR121_Datastream.begin(&Serial);  // start datastream object using provided Serial reference
+  // See p3 of http://cache.freescale.com/files/sensors/doc/app_note/AN3894.pdf
+  // for more details
+
+  MPR121.pinMode(11, OUTPUT);
 }
 
 void loop() {
-  MPR121.updateAll();
-  MPR121_Datastream.update();
+  int i;
+
+  // Note that ELE9 and ELE10 have a PWM bug - you should avoid using them
+  // See https://community.freescale.com/thread/305474 for more details
+
+  for (i = 0; i < 256; i++) {
+    MPR121.analogWrite(11, i);
+    delay(10);
+  }
+
+  for (i = 255; i >= 0; i--) {
+    MPR121.analogWrite(11, i);
+    delay(10);
+  }
 }

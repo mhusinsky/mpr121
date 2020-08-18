@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
  
- MPR121_defs.h - MPR121 register definitions
+ Bareconductive_MPR121_defs.h - MPR121 register definitions
  
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale 
  Semiconductor datasheets and application notes.

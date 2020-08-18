@@ -38,7 +38,7 @@
 #define MPR121_DATASTREAM_H
 
 #include <Arduino.h>
-#include "MPR121.h"
+#include "Bareconductive_MPR121.h"
 
 class MPR121_Datastream_type {
 public:

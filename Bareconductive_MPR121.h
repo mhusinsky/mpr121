@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- MPR121.h - MPR121 class header file
+ Bareconductive_MPR121.h - MPR121 class header file
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
@@ -38,7 +38,12 @@
 #ifndef MPR121_H
 #define MPR121_H
 
-#include "MPR121_defs.h"
+#ifdef ARDUINO_ARCH_ESP32
+  #define PIN_WIRE_SDA SDA  // SDA defined in pins_arduino.h
+  #define PIN_WIRE_SCL SCL  // SCL defined in pins_arduino.h
+#endif
+
+#include "Bareconductive_MPR121_defs.h"
 #include <Wire.h>
 
 // idea behind this is to create a settings structure that we can use to store
@@ -52,7 +57,7 @@ struct MPR121_settings_type
   uint8_t TTHRESH;
   uint8_t RTHRESH;
 
-  uint8_t INTERRUPT;
+  uint8_t INTERRUPT_PIN;
 
   // general electrode touch sense baseline filters
   // rising filter
@@ -109,7 +114,7 @@ struct MPR121_settings_type
   MPR121_settings_type():
     TTHRESH(40),
     RTHRESH(20),
-    INTERRUPT(4),   // note that this is not a hardware interrupt, just the digital
+    INTERRUPT_PIN(4),   // note that this is not a hardware interrupt, just the digital
                     // pin that the MPR121 ~INT pin is connected to
     MHDR(0x01),
     NHDR(0x01),

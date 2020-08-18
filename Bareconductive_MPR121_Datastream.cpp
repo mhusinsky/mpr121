@@ -3,7 +3,7 @@
  Bare Conductive MPR121 library
  ------------------------------
 
- MPR121_Datastream_type.cpp - MPR121_Datastream_type class implementation file
+ Bareconductive_MPR121_Datastream_type.cpp - MPR121_Datastream_type class implementation file
 
  Based on code by Jim Lindblom and plenty of inspiration from the Freescale
  Semiconductor datasheets and application notes.
@@ -34,7 +34,7 @@
 
 *******************************************************************************/
 
-#include "MPR121_Datastream.h"
+#include "Bareconductive_MPR121_Datastream.h"
 
 #ifdef ARDUINO_ARCH_AVR
   #include <avr/wdt.h>
