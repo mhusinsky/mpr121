@@ -301,6 +301,7 @@ class MPR121_type
 
     // returns a boolean indicating the touch status of a given electrode
     bool getTouchData(uint8_t electrode);
+    uint16_t getAllTouchData();
 
     // returns the number of touches currently detected
     uint8_t getNumTouches();
