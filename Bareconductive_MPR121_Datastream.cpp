@@ -111,12 +111,12 @@ void MPR121_Datastream_type::processSerial() {
   static byte ndx = 0;
   boolean hasData = false;
 
-  char receivedChars[255];
+  char receivedChars[255] = "";
   char receivedChar;
 
   while (stream->available() > 0 && !hasData) {
     receivedChar = stream->read();
-
+  
     if (receivedChar != '\n') {
       receivedChars[ndx] = receivedChar;
       ndx++;
